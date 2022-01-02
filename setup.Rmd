@@ -1,0 +1,31 @@
+
+Wordle play
+
+packages
+
+```{r}
+library(tidyverse)
+```
+
+read word list
+
+```{r}
+words <- read_csv("words.txt", col_names = "word")
+words
+```
+
+find words of length 5
+
+```{r}
+words %>% mutate(len = str_length(word)) %>% 
+  filter(len == 5) %>% 
+  pull(word) %>% tolower() -> fives
+fives
+```
+
+save them
+
+```{r}
+write_rds(fives, "fives.rds")
+```
+

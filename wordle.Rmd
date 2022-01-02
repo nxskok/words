@@ -1,0 +1,88 @@
+packages
+
+```{r}
+library(tidyverse)
+```
+
+
+get word list
+
+```{r}
+fives <- read_rds("fives.rds")
+```
+
+get right answer
+
+```{r}
+answer <- sample(fives, 1)
+```
+
+
+points for a single letter
+
+```{r}
+letter_points <- function(my_letter, position, answer) {
+  v <- unlist(strsplit(answer, "")) # turns into a vector
+  case_when(
+    my_letter == v[position]      ~ 3,
+    str_detect(answer, my_letter) ~ 1,
+    TRUE                          ~ 0
+  )
+}
+```
+
+points for a whole word
+
+```{r}
+word_points <- function(my_guess, answer) {
+  v <- unlist(strsplit(my_guess, "")) # turns into a vector
+  unlist(imap(v, ~letter_points(.x, .y, answer)))
+}
+```
+
+letter list with in-out-unknown
+
+```{r}
+iou <- function(d) {
+d %>% 
+  pivot_longer(-guess) %>% 
+  mutate(pos1 = str_replace_all(name, "\\.", "")) %>% 
+  mutate(pos = as.numeric(pos1)) %>% 
+  rowwise() %>% 
+  mutate(guesses = list(unlist(strsplit(guess, "")))) %>% 
+  mutate(guess_letter = guesses[pos]) %>% 
+  select(guess_letter, points = value) -> dd
+dd
+tibble(guess_letter = letters) %>% left_join(dd) %>% 
+  mutate(status = case_when(
+    is.na(points) ~ "unknown",
+    points > 0    ~ "in",
+    TRUE          ~ "out"
+  )) %>% 
+  select(-points) %>%
+  distinct(guess_letter, status) %>%
+  group_by(status) %>%
+  summarize(thing = toString(guess_letter))
+}
+```
+
+
+play
+
+```{r}
+guesses <- c("rates", "ligon", "bunch", "sated", "setax")
+tibble(guess = guesses) %>% 
+  rowwise() %>% 
+  mutate(points = list(word_points(guess, answer))) %>% 
+  unnest_wider(points) -> d
+d
+```
+
+```{r}
+iou(d)
+```
+
+```{r}
+answer
+```
+
